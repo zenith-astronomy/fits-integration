@@ -28,7 +28,5 @@ Fits IntegrateAverage(const std::vector<Fits>& frames)
         result.pixels.push_back(value);
     }
 
-    std::cout << "Frames stacked successfully!\n";
-
     return result;
 }

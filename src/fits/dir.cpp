@@ -50,7 +50,10 @@ std::vector<fs::path> GetFitsInDir(const fs::path& dir)
 
 void WriteToDir(const Fits& fits, const fs::path& dir)
 {
-    fs::path outputPath = dir / "result.fits";
+    fs::path outputDir = dir / "output";
+    fs::create_directories(outputDir);
+
+    fs::path outputPath = outputDir / "result.fits";
 
     std::ofstream file(outputPath, std::ios::binary);
 

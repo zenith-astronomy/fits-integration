@@ -9,6 +9,7 @@
 #include "fits/dir.h"
 
 #include "algorithms/average.h"
+#include "algorithms/median.h"
 
 int main()
 {
@@ -89,12 +90,17 @@ int main()
             if (algorithm == "average")
             {
                 Fits result = IntegrateAverage(frames);
-
+                WriteToDir(result, dirPath);
+            }
+            else if (algorithm == "median")
+            {
+                Fits result = IntegrateMedian(frames);
                 WriteToDir(result, dirPath);
             }
             else
             {
                 std::cerr << "The selected integration algorithm is not available\n";
+                continue;
             }
 
             end = std::chrono::steady_clock::now();
