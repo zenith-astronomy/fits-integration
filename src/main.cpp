@@ -10,6 +10,7 @@
 
 #include "algorithms/average.h"
 #include "algorithms/median.h"
+#include "algorithms/min-max.h"
 
 int main()
 {
@@ -77,8 +78,6 @@ int main()
                 frames.push_back(currentFits);
             }
 
-            std::cout << "Successfully opened " << frames.size() << " FITS files!\n";
-
             auto end = std::chrono::steady_clock::now();
 
             double elapsed = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000);
@@ -95,6 +94,16 @@ int main()
             else if (algorithm == "median")
             {
                 Fits result = IntegrateMedian(frames);
+                WriteToDir(result, dirPath);
+            }
+            else if (algorithm == "maximum")
+            {
+                Fits result = IntegrateMaximum(frames);
+                WriteToDir(result, dirPath);
+            }
+            else if (algorithm == "minimum")
+            {
+                Fits result = IntegrateMinimum(frames);
                 WriteToDir(result, dirPath);
             }
             else
