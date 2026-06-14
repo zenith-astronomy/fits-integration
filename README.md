@@ -7,10 +7,10 @@ Note: this tool exclusively integrates frames, it does NOT register/align them.
 ## Available algorithms
 
 - Average
+- Median
 
 ## Planned algorithms
 
-- Median
 - Minimum/Maximum
 
 ## Planned rejections
