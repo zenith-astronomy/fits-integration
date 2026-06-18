@@ -1,20 +1,14 @@
 #include "average.h"
 
 #include <iostream>
+#include <thread>
+#include <functional>
 
-Fits IntegrateAverage(const std::vector<Fits>& frames)
+void IntegrateAverageRange(const std::vector<Fits>& frames, Fits& result, int begin, int end)
 {
-    std::cout << "Starting average integration...\n";
-
     int framesCount = frames.size();
 
-    int pixelsCount = frames[0].pixels.size();
-
-    Fits result = frames[0];
-    result.pixels.clear();
-    result.pixels.reserve(pixelsCount);
-
-    for (int i = 0; i < pixelsCount; i++)
+    for (int i = begin; i < end; i++)
     {
         float sum = 0.0f;
 
@@ -25,7 +19,38 @@ Fits IntegrateAverage(const std::vector<Fits>& frames)
 
         float value = sum / framesCount;
 
-        result.pixels.push_back(value);
+        result.pixels[i] = value;
+    }
+}
+
+Fits IntegrateAverage(const std::vector<Fits>& frames)
+{
+    std::cout << "Starting average integration...\n";
+
+    int pixelsCount = frames[0].pixels.size();
+
+    Fits result = frames[0];
+    result.pixels.clear();
+    result.pixels.resize(pixelsCount);
+
+    int threadCount = std::thread::hardware_concurrency();
+
+    std::vector<std::thread> threads;
+    threads.reserve(threadCount);
+
+    int pixelsPerThread = (pixelsCount + threadCount - 1) / threadCount;
+
+    for (int threadIndex = 0; threadIndex < threadCount; threadIndex++)
+    {
+        int begin = threadIndex * pixelsPerThread;
+        int end = std::min(begin + pixelsPerThread, pixelsCount);
+
+        threads.emplace_back(IntegrateAverageRange, std::cref(frames), std::ref(result), begin, end);
+    }
+
+    for (std::thread& thread : threads)
+    {
+        thread.join();
     }
 
     return result;

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <thread>
 
 #include "fits/fits.h"
 #include "fits/dir.h"
@@ -11,6 +12,30 @@
 #include "algorithms/average.h"
 #include "algorithms/median.h"
 #include "algorithms/min-max.h"
+
+Fits LoadFits(const fs::path& path)
+{
+    Fits fits;
+
+    std::ifstream file(path, std::ios::binary);
+
+    if (!file)
+    {
+        throw std::runtime_error("Could not open FITS file");
+    }
+
+    if (!ParseFitsHeader(fits, file))
+    {
+        std::cerr << "Couldn't parse FITS header\n";
+    }
+
+    if (!ParseFitsPixels(fits, file))
+    {
+        std::cerr << "Couldn't parse FITS pixels\n";
+    }
+
+    return fits;
+}
 
 int main()
 {
@@ -55,27 +80,38 @@ int main()
             std::vector<fs::path> paths = GetFitsInDir(dirPath);
 
             std::vector<Fits> frames = {};
-            frames.reserve(paths.size());
+            frames.resize(paths.size());
 
-            for (fs::path& path : paths)
+            int threadCount = std::thread::hardware_concurrency();
+
+            threadCount = std::min<int>(threadCount, paths.size());
+
+            std::cout << "Using " << threadCount << " threads\n";
+
+            std::vector<std::thread> threads;
+            threads.reserve(threadCount);
+
+            std::size_t filesPerThread = (paths.size() + threadCount - 1) / threadCount;
+
+            auto loadRange = [&](std::size_t begin, std::size_t end)
             {
-                Fits currentFits;
-
-                std::ifstream file(path, std::ios::binary);
-
-                if (!ParseFitsHeader(currentFits, file))
+                for (std::size_t i = begin; i < end; i++)
                 {
-                    std::cerr << "Couldn't parse FITS header\n";
-                    break;
+                    frames[i] = LoadFits(paths[i]);
                 }
+            };
 
-                if (!ParseFitsPixels(currentFits, file))
-                {
-                    std::cerr << "Couldn't parse FITS pixels\n";
-                    break;
-                }
+            for (unsigned int threadIndex = 0; threadIndex < threadCount; threadIndex++)
+            {
+                std::size_t begin = threadIndex * filesPerThread;
+                std::size_t end = std::min(begin + filesPerThread, paths.size());
 
-                frames.push_back(currentFits);
+                threads.emplace_back(loadRange, begin, end);
+            }
+
+            for (std::thread& thread : threads)
+            {
+                thread.join();
             }
 
             auto end = std::chrono::steady_clock::now();
